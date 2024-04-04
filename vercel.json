@@ -10,5 +10,8 @@
         "src": "/(.*)",
         "dest": "main.py"
       }
-    ]
+    ],
+    "engines": {
+        "node": "18.x"
+      }
   }

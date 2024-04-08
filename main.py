@@ -1,5 +1,6 @@
 # main.py
 from fastapi import FastAPI
+from typing import Annotated
 
 app = FastAPI() # This is what will be refrenced in config
 

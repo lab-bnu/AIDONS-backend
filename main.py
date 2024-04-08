@@ -1,7 +1,5 @@
 # main.py
 from fastapi import FastAPI, UploadFile
-from fastapi.responses import HTMLResponse
-from typing import Annotated
 
 app = FastAPI() # This is what will be refrenced in config
 

@@ -1,2 +1,2 @@
-fastapi==0.101.1
+fastapi>=0.109.1
 typing==3.7.4.3

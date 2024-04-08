@@ -6,9 +6,9 @@ from fastapi.responses import HTMLResponse
 app = FastAPI()
 
 
-@app.post("/uploadfile/")
-async def create_upload_file(file: UploadFile):
-    return {"filename": file.filename}
+@app.post("/extractinfo/")
+async def create_extract_info(file: UploadFile):
+    return {"filename": file.filename, "title": "Mon super livre", "author" : "Arthur Le Best", "year" : "2024", "ISBN" : "9782410000757"}
 
 
 
@@ -16,7 +16,7 @@ async def create_upload_file(file: UploadFile):
 async def main():
     content = """
 <body>
-<form action="/uploadfile/" enctype="multipart/form-data" method="post">
+<form action="/extractinfo/" enctype="multipart/form-data" method="post">
 <input name="file" type="file" multiple>
 <input type="submit">
 </form>

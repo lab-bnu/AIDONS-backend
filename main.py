@@ -2,13 +2,10 @@ from io import BytesIO
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
-import traceback
 from PIL import Image
 
-try:
-    from pyzbar.pyzbar import decode
-except Exception:
-    print(traceback.format_exc())
+from pyzbar.pyzbar import decode
+
 
 app = FastAPI()
 

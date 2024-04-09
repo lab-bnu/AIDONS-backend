@@ -3,7 +3,7 @@ from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 
-from PIL import Image
+#from PIL import Image
 #from pyzbar.pyzbar import decode, ZBarSymbol
 
 app = FastAPI()

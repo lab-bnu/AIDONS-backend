@@ -4,7 +4,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 from PIL import Image
-from pyzbar.pyzbar import decode, ZBarSymbol
+#from pyzbar.pyzbar import decode, ZBarSymbol
 
 app = FastAPI()
 

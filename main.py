@@ -23,10 +23,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-def read_image(image_encoded):
+'''def read_image(image_encoded):
     pil_image = Image.open(BytesIO(image_encoded))
     return pil_image
-
+'''
 
 @app.post("/extractinfo/")
 async def create_extract_info(file: UploadFile):

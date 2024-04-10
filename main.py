@@ -4,7 +4,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from PIL import Image
 
-from pyzbar.pyzbar import decode
+
 
 
 app = FastAPI()
@@ -37,6 +37,7 @@ async def create_extract_info(file: UploadFile):
 @app.post("/barcode/")
 async def read_barcode(file: UploadFile):
     img = read_image(file.file.read()) # PIL Image
+    from pyzbar.pyzbar import decode
     decoded_list = decode(img)
     print(decoded_list)
     if len(decoded_list) > 0: 

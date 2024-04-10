@@ -37,7 +37,9 @@ async def create_extract_info(file: UploadFile):
 @app.post("/barcode/")
 async def read_barcode(file: UploadFile):
     img = read_image(file.file.read()) # PIL Image
-    from pyzbar.pyzbar import decode
+    try:
+        from pyzbar.pyzbar import decode
+    except Exception as e: print(e)
     decoded_list = decode(img)
     print(decoded_list)
     if len(decoded_list) > 0: 

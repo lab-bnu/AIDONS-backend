@@ -1,12 +1,6 @@
-click==8.1.7
-colorama==0.4.6
-h11==0.14.0
-typing_extensions==4.11.0
-uvicorn==0.29.0
 fastapi>=0.109.1
 python-multipart==0.0.9
 pyzbar==0.1.9
 pillow==10.3.0
 numpy==1.26.4
-langsmith==0.0.21
-orjson==3.10.0
+zbar==0.10.0

@@ -4,9 +4,9 @@ from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from PIL import Image
 #mport zxing
-import cv2
-#import zxingcpp
-import numpy as np
+#import cv2
+import zxingcpp
+#import numpy as np
 
 
 app = FastAPI()
@@ -28,8 +28,8 @@ app.add_middleware(
 
 def read_image(image_encoded):
     pil_image = Image.open(BytesIO(image_encoded))
-    opencvImage = cv2.cvtColor(np.array(pil_image), cv2.COLOR_RGB2BGR)
-    return opencvImage
+    #opencvImage = cv2.cvtColor(np.array(pil_image), cv2.COLOR_RGB2BGR)
+    return pil_image
 
 
 @app.post("/extractinfo/")
@@ -41,6 +41,11 @@ async def create_extract_info(file: UploadFile):
 async def read_barcode(file: UploadFile):
     img = read_image(file.file.read())
     print(img)
+    results = zxingcpp.read_barcodes(img)
+    for result in results:
+        return {'ISBN' : result.text}
+    if len(results) == 0:
+	    raise HTTPException(status_code=404, detail="Barcode not found")
 '''   reader = zxing.BarCodeReader()
     print(reader.zxing_version, reader.zxing_version_info)
     barcode = reader.decode(img)

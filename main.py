@@ -3,10 +3,7 @@ from fastapi import FastAPI, UploadFile, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from PIL import Image
-#mport zxing
-#import cv2
 import zxingcpp
-#import numpy as np
 
 
 app = FastAPI()
@@ -42,34 +39,12 @@ async def read_barcode(file: UploadFile):
     img = read_image(file.file.read())
     print(img)
     results = zxingcpp.read_barcodes(img)
-    for result in results:
-        return {'ISBN' : result.text}
-    if len(results) == 0:
-	    raise HTTPException(status_code=404, detail="Barcode not found")
-'''   reader = zxing.BarCodeReader()
-    print(reader.zxing_version, reader.zxing_version_info)
-    barcode = reader.decode(img)
-    print(barcode)
-   results = zxingcpp.read_barcodes(img)
-    for result in results:
-        return {'ISBN' : result.text}
-    if len(results) == 0:
-	    raise HTTPException(status_code=404, detail="Barcode not found")
-   print('======================', len(results))
-    if len(results)>0:
-        return {"data": results[0].text,  "type": results[0].format, "rect": results[0].position, "quality": results[0].content_type}
+    if len(result)>0:
+        for result in results:
+            return {'ISBN' : result.text}
     else:
 	    raise HTTPException(status_code=404, detail="Barcode not found")
-  img = read_image(file.file.read()) # PIL Image
-    from pyzbar.pyzbar import decode
-    decoded_list = decode(img)
-    print(decoded_list)
-    if len(decoded_list) > 0: 
-        return {"data": decoded_list[0].data,  "type": decoded_list[0].type, "rect": decoded_list[0].rect, "quality": decoded_list[0].quality, "orient": decoded_list[0].orientation}
-    else:
-        raise HTTPException(status_code=404, detail="Barcode not found")'''
     
-
 
 @app.get("/")
 async def main():

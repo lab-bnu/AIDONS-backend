@@ -37,9 +37,9 @@ async def create_extract_info(file: UploadFile):
 @app.post("/barcode/")
 async def read_barcode(file: UploadFile):
     img = read_image(file.file.read())
-''' print(img)
+    print(img)
     results = zxingcpp.read_barcodes(img)
-    if len(result)>0:
+'''    if len(result)>0:
         for result in results:
             return {'ISBN' : result.text}
     else:

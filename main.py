@@ -39,7 +39,7 @@ async def read_barcode(file: UploadFile):
     img = read_image(file.file.read()) # PIL Image
     try:
         from pyzbar.pyzbar import decode
-    except Exception as e: print(e)
+    except Exception as e: return {"error" : e}
     decoded_list = decode(img)
     print(decoded_list)
     if len(decoded_list) > 0: 

@@ -1,8 +1,5 @@
 fastapi>=0.109.1
 python-multipart==0.0.9
-//pyzbar==0.1.9
 pillow==10.3.0
 numpy==1.26.4
-//zxing-cpp==2.2.0
 opencv-python==4.9.0.80
-//zxing==1.0.3

@@ -39,6 +39,7 @@ async def read_barcode(file: UploadFile):
     img = read_image(file.file.read())
     print(img)
     results = zxingcpp.read_barcodes(img)
+    return {'data' : results}
 '''    if len(result)>0:
         for result in results:
             return {'ISBN' : result.text}

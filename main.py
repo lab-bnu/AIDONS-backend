@@ -40,7 +40,7 @@ async def read_barcode(file: UploadFile):
 	results = zxingcpp.read_barcodes(img)
 	if len(results) > 0 :
 		for result in results:
-			return {'code' : f'"{result.text}"', 'format' : f'{result.format}', 'content' : f'{result.content_type}', 'position' : f'{result.position}'}
+			return {'code' : f'{result.text}', 'format' : f'{result.format}', 'content' : f'{result.content_type}', 'position' : f'{result.position}'}
 	else:
 		raise HTTPException(status_code=404, detail="Barcode not found")
 

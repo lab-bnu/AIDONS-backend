@@ -3,11 +3,10 @@ from fastapi import FastAPI, UploadFile, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from PIL import Image
-import traceback
-import cv2, zxingcpp
+#mport zxing
+import cv2
+#import zxingcpp
 import numpy as np
-
-
 
 
 app = FastAPI()
@@ -41,12 +40,17 @@ async def create_extract_info(file: UploadFile):
 @app.post("/barcode/")
 async def read_barcode(file: UploadFile):
     img = read_image(file.file.read())
-    results = zxingcpp.read_barcodes(img)
+    print(img)
+'''   reader = zxing.BarCodeReader()
+    print(reader.zxing_version, reader.zxing_version_info)
+    barcode = reader.decode(img)
+    print(barcode)
+   results = zxingcpp.read_barcodes(img)
     for result in results:
         return {'ISBN' : result.text}
     if len(results) == 0:
 	    raise HTTPException(status_code=404, detail="Barcode not found")
-'''   print('======================', len(results))
+   print('======================', len(results))
     if len(results)>0:
         return {"data": results[0].text,  "type": results[0].format, "rect": results[0].position, "quality": results[0].content_type}
     else:

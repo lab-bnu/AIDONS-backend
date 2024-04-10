@@ -37,12 +37,13 @@ async def create_extract_info(file: UploadFile):
 @app.post("/barcode/")
 async def read_barcode(file: UploadFile):
 	img = read_image(file.file.read())
-	print(img)
 	results = zxingcpp.read_barcodes(img)
-	for result in results:
-		data = 'Found barcode:' + f'\n Text:    "{result.text}"' + f'\n Format:   {result.format}' + f'\n Content:  {result.content_type}' + f'\n Position: {result.position}'
-		#raise HTTPException(status_code=404, detail="Barcode not found")
-	return {'code' : f'"{result.text}"', 'format' : f'{result.format}', 'content' : f'{result.content_type}', 'position' : f'{result.position}'}
+	if len(results) > 0 :
+		for result in results:
+			return {'code' : f'"{result.text}"', 'format' : f'{result.format}', 'content' : f'{result.content_type}', 'position' : f'{result.position}'}
+	else:
+		raise HTTPException(status_code=404, detail="Barcode not found")
+
 @app.get("/")
 async def main():
 	content = """

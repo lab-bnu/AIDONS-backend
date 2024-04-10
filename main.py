@@ -3,6 +3,7 @@ from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from PIL import Image
+import traceback
 
 
 
@@ -39,7 +40,7 @@ async def read_barcode(file: UploadFile):
     img = read_image(file.file.read()) # PIL Image
     try:
         from pyzbar.pyzbar import decode
-    except Exception as e: return {"error" : e}
+    except: return {"error" : traceback.print_exc()}
     decoded_list = decode(img)
     print(decoded_list)
     if len(decoded_list) > 0: 

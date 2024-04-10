@@ -42,7 +42,7 @@ async def read_barcode(file: UploadFile):
 	for result in results:
 		data = 'Found barcode:' + f'\n Text:    "{result.text}"' + f'\n Format:   {result.format}' + f'\n Content:  {result.content_type}' + f'\n Position: {result.position}'
 		#raise HTTPException(status_code=404, detail="Barcode not found")
-	return {'data' : data}
+	return {'data' : f'"{result.text}"', 'format' : f'{result.format}', 'content' : f'{result.content_type}', 'position' : f'\n Position: {result.position}'}
 @app.get("/")
 async def main():
 	content = """

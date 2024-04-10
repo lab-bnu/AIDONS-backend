@@ -28,7 +28,7 @@ app.add_middleware(
 
 def read_image(image_encoded):
     pil_image = Image.open(BytesIO(image_encoded))
-    #opencvImage = cv2.cvtColor(np.array(pil_image), cv2.COLOR_RGB2BGR)
+    #opencvImage = cv2.cvtColor(np.array(pil_image), cv2.COLOR_RGB2BGR) # if opencv
     return pil_image
 
 

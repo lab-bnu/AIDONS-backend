@@ -4,6 +4,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from PIL import Image
 import zxingcpp
+from ultralytics import YOLO
 
 
 app = FastAPI()
@@ -27,6 +28,16 @@ def read_image(image_encoded):
 	pil_image = Image.open(BytesIO(image_encoded))
 	#opencvImage = cv2.cvtColor(np.array(pil_image), cv2.COLOR_RGB2BGR) # if opencv
 	return pil_image
+
+@app.post("/segment/")
+async def segment(file: UploadFile):
+	model = YOLO('yolov8n.pt')  # load a pretrained model 
+	print("SUCCESSFULLY LOADED=================================")
+	results = model('img-test-00.jpg')  # predict on an image
+	print("SUCCESSFULLY PREDICTED=================================")
+	print(results)
+	return {'res': 'done'}
+
 
 
 @app.post("/extractinfo/")
@@ -52,6 +63,12 @@ async def main():
 <input name="file" type="file" multiple>
 <input type="submit">
 </form>
+
+<form action="/segment/" enctype="multipart/form-data" method="post">
+<input name="file" type="file" multiple>
+<input type="submit">
+</form>
+
 </body>
 	"""
 	return HTMLResponse(content=content)

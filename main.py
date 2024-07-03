@@ -1,13 +1,21 @@
 from io import BytesIO
-from fastapi import FastAPI, UploadFile, HTTPException
+from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from PIL import Image
 import zxingcpp
 from ultralytics import YOLO
+import pandas as pd
+import os
+import json
+from loguru import logger
+import sys
 
 
 app = FastAPI()
+
+model = YOLO('best.pt')  # load a pretrained model 
+print("SUCCESSFULLY LOADED=================================")
 
 origins = [
 	"http://localhost",
@@ -24,21 +32,183 @@ app.add_middleware(
 	allow_headers=["*"],
 )
 
-def read_image(image_encoded):
-	pil_image = Image.open(BytesIO(image_encoded))
-	#opencvImage = cv2.cvtColor(np.array(pil_image), cv2.COLOR_RGB2BGR) # if opencv
-	return pil_image
+#====================================================================================================================
+def get_image_from_bytes(binary_image: bytes) -> Image:
+    """Convert image from bytes to PIL RGB format
+    
+    Args:
+        binary_image (bytes): The binary representation of the image
+    
+    Returns:
+        PIL.Image: The image in PIL RGB format
+    """
+    input_image = Image.open(BytesIO(binary_image)).convert("RGB")
+    return input_image
+
+
+def get_bytes_from_image(image: Image) -> bytes:
+    """
+    Convert PIL image to Bytes
+    
+    Args:
+    image (Image): A PIL image instance
+    
+    Returns:
+    bytes : BytesIO object that contains the image in JPEG format with quality 85
+    """
+    return_image = BytesIO()
+    image.save(return_image, format='JPEG', quality=85)  # save the image in JPEG format with quality 85
+    return_image.seek(0)  # set the pointer to the beginning of the file
+    return return_image
+
+def transform_predict_to_df(results: list, labeles_dict: dict) -> pd.DataFrame:
+    """
+    Transform predict from yolov8 (torch.Tensor) to pandas DataFrame.
+
+    Args:
+        results (list): A list containing the predict output from yolov8 in the form of a torch.Tensor.
+        labeles_dict (dict): A dictionary containing the labels names, where the keys are the class ids and the values are the label names.
+        
+    Returns:
+        predict_bbox (pd.DataFrame): A DataFrame containing the bounding box coordinates, confidence scores and class labels.
+    """
+    # Transform the Tensor to numpy array
+    predict_bbox = pd.DataFrame(results[0].to("cpu").numpy().boxes.xyxy, columns=['xmin', 'ymin', 'xmax','ymax'])
+    # Add the confidence of the prediction to the DataFrame
+    predict_bbox['confidence'] = results[0].to("cpu").numpy().boxes.conf
+    # Add the class of the prediction to the DataFrame
+    predict_bbox['class'] = (results[0].to("cpu").numpy().boxes.cls).astype(int)
+    # Replace the class number with the class name from the labeles_dict
+    predict_bbox['name'] = predict_bbox["class"].replace(labeles_dict)
+    return predict_bbox
+
+def get_model_predict(model: YOLO, input_image: Image, save: bool = False, image_size: int = 1248, conf: float = 0.5, augment: bool = False) -> pd.DataFrame:
+    """
+    Get the predictions of a model on an input image.
+    
+    Args:
+        model (YOLO): The trained YOLO model.
+        input_image (Image): The image on which the model will make predictions.
+        save (bool, optional): Whether to save the image with the predictions. Defaults to False.
+        image_size (int, optional): The size of the image the model will receive. Defaults to 1248.
+        conf (float, optional): The confidence threshold for the predictions. Defaults to 0.5.
+        augment (bool, optional): Whether to apply data augmentation on the input image. Defaults to False.
+    
+    Returns:
+        pd.DataFrame: A DataFrame containing the predictions.
+    """
+    # Make predictions
+    predictions = model.predict(
+                        imgsz=image_size, 
+                        source=input_image, 
+                        conf=conf,
+                        save=save, 
+                        augment=augment,
+                        flipud= 0.0,
+                        fliplr= 0.0,
+                        mosaic = 0.0,
+                        )
+    
+    # Transform predictions to pandas dataframe
+    predictions = transform_predict_to_df(predictions, model.model.names)
+    return predictions
+
+
+################################# Models #####################################
+
+
+def detect_sample_model(input_image: Image) -> pd.DataFrame:
+    """
+    Predict from sample_model.
+    Base on YoloV8
+
+    Args:
+        input_image (Image): The input image.
+
+    Returns:
+        pd.DataFrame: DataFrame containing the object location.
+    """
+    predict = get_model_predict(
+        model=model,
+        input_image=input_image,
+        save=False,
+        image_size=640,
+        augment=False,
+        conf=0.5,
+    )
+    return predict
+
+####################################### logger #################################
+
+logger.remove()
+logger.add(
+    sys.stderr,
+    colorize=True,
+    format="<green>{time:HH:mm:ss}</green> | <level>{message}</level>",
+    level=10,
+)
+logger.add("log.log", rotation="1 MB", level="DEBUG", compression="zip")
+
+
+@app.post("/img_object_detection_to_json")
+def img_object_detection_to_json(file: bytes = File(...)):
+    """
+    Object Detection from an image.
+
+    Args:
+        file (bytes): The image file in bytes format.
+    Returns:
+        dict: JSON format containing the Objects Detections.
+    """
+    # Step 1: Initialize the result dictionary with None values
+    result={'detect_objects': None}
+
+    # Step 2: Convert the image file to an image object
+    input_image = get_image_from_bytes(file)
+
+    # Step 3: Predict from model
+    predict = detect_sample_model(input_image)
+    
+    print(type(predict))
+    print(predict)
+
+    # Step 4: Select detect obj return info
+    # here you can choose what data to send to the result
+    detect_res = predict[['name', 'confidence']]
+    objects = detect_res['name'].values
+
+    result['detect_objects_names'] = ', '.join(objects)
+    result['detect_objects'] = json.loads(detect_res.to_json(orient='records'))
+
+    # Step 5: Logs and return
+    logger.info("results: {}", result)
+    return result
+#====================================================================================================================
 
 @app.post("/segment/")
 async def segment(file: UploadFile):
-	model = YOLO('yolov8n.pt')  # load a pretrained model 
-	print("SUCCESSFULLY LOADED=================================")
-	results = model('img-test-00.jpg')  # predict on an image
+    return get_model_predict(model, get_image_from_bytes(file.file.read()))
+   #os.system("yolo predict model=./best.pt source='./test_1.jpeg'")
+
+   #return {'res': 'done'}
+
+'''
+	img = read_image(file.file.read())
+	results = model.predict(source = img, conf=0.2)  # predict on an image
 	print("SUCCESSFULLY PREDICTED=================================")
-	print(results)
-	return {'res': 'done'}
-
-
+	# Process results list
+	for result in results:
+		boxes = result.boxes  # Boxes object for bounding box outputs
+		masks = result.masks  # Masks object for segmentation masks outputs
+		keypoints = result.keypoints  # Keypoints object for pose outputs
+		probs = result.probs  # Probs object for classification outputs
+		obb = result.obb  # Oriented boxes object for OBB outputs
+		print(boxes)
+		print(masks)
+		print(keypoints)
+		print(probs)
+		print(obb)
+	return {'res': 'done'}'''
 
 @app.post("/extractinfo/")
 async def create_extract_info(file: UploadFile):
@@ -47,7 +217,7 @@ async def create_extract_info(file: UploadFile):
 
 @app.post("/barcode/")
 async def read_barcode(file: UploadFile):
-	img = read_image(file.file.read())
+	img = get_image_from_bytes(file.file.read())
 	results = zxingcpp.read_barcodes(img)
 	if len(results) > 0 :
 		for result in results:
@@ -65,7 +235,12 @@ async def main():
 </form>
 
 <form action="/segment/" enctype="multipart/form-data" method="post">
-<input name="file" type="file" multiple>
+<input name="file" type="file">
+<input type="submit">
+</form>
+
+<form action="/img_object_detection_to_json/" enctype="multipart/form-data" method="post">
+<input name="file" type="file">
 <input type="submit">
 </form>
 

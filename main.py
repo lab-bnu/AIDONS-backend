@@ -10,6 +10,7 @@ import os
 import json
 from loguru import logger
 import sys
+import pytesseract
 
 
 app = FastAPI()
@@ -114,6 +115,33 @@ def get_model_predict(model: YOLO, input_image: Image, save: bool = False, image
     return predictions
 
 
+def crop_image_by_predict(image: Image, predict: pd.DataFrame, crop_class_name: str,) -> Image:
+    """Crop an image based on the detection of a certain object in the image.
+    
+    Args:
+        image: Image to be cropped.
+        predict (pd.DataFrame): Dataframe containing the prediction results of object detection model.
+        crop_class_name (str, optional): The name of the object class to crop the image by. if not provided, function returns the first object found in the image.
+    
+    Returns:
+        Image: Cropped image or None
+    """
+    crop_predicts = predict[(predict['name'] == crop_class_name)]
+
+    if crop_predicts.empty:
+        raise HTTPException(status_code=400, detail=f"{crop_class_name} not found in photo")
+
+    # if there are several detections, choose the one with more confidence
+    if len(crop_predicts) > 1:
+        crop_predicts = crop_predicts.sort_values(by=['confidence'], ascending=False)
+
+    crop_bbox = crop_predicts[['xmin', 'ymin', 'xmax','ymax']].iloc[0].values
+    # crop
+    img_crop = image.crop(crop_bbox)
+    return(img_crop)
+
+
+
 ################################# Models #####################################
 
 
@@ -137,6 +165,7 @@ def detect_sample_model(input_image: Image) -> pd.DataFrame:
         conf=0.5,
     )
     return predict
+
 
 ####################################### logger #################################
 
@@ -169,25 +198,58 @@ def img_object_detection_to_json(file: bytes = File(...)):
     # Step 3: Predict from model
     predict = detect_sample_model(input_image)
     
-    print(type(predict))
     print(predict)
 
     # Step 4: Select detect obj return info
     # here you can choose what data to send to the result
-    detect_res = predict[['name', 'confidence']]
-    objects = detect_res['name'].values
+    
+    # If there are ISBN detected : try the barcode reader, and if not, try OCR. Once one of them is found, then return
+    # Else, return OCRed title, name, and editor
+    if len(predict[(predict['name'] == 'ISBN')]) > 0:
+        cropped_image = crop_image_by_predict(input_image, predict, 'ISBN')
+        isbn = zxingcpp.read_barcodes(cropped_image)
+        print(isbn)
+        if len(isbn) > 0 :
+	        for result in isbn:
+                 return {'code' : f'{result.text}', 'format' : f'{result.format}', 'content' : f'{result.content_type}', 'position' : f'{result.position}'}
+        else:
+            raise HTTPException(status_code=404, detail="Barcode not found")
+    
+    objects = predict['name'].values
 
     result['detect_objects_names'] = ', '.join(objects)
-    result['detect_objects'] = json.loads(detect_res.to_json(orient='records'))
-
+    result['detect_objects'] = json.loads(predict.to_json(orient='records'))
+    
+    for item in result['detect_objects']:
+        if item['name'] != 'ISBN':
+            print(item)
+            #pytesseract.pytesseract.tesseract_cmd = <path_to-tesseract.exe>
+            txt = pytesseract.image_to_string(crop_image_by_predict(input_image, predict, item['name'])) #for now only crop the first in the category, TODO change that 
+            item = item.update({'Text': txt})
     # Step 5: Logs and return
     logger.info("results: {}", result)
     return result
+
+
+def try_barcode_from_file(file: UploadFile):
+	img = get_image_from_bytes(file.file.read())
+	results = zxingcpp.read_barcodes(img)
+	if len(results) > 0 :
+		for result in results:
+			return {'code' : f'{result.text}', 'format' : f'{result.format}', 'content' : f'{result.content_type}', 'position' : f'{result.position}'}
+	else:
+		return False
+
 #====================================================================================================================
 
 @app.post("/segment/")
 async def segment(file: UploadFile):
-    return get_model_predict(model, get_image_from_bytes(file.file.read()))
+    isbn = False #try_barcode_from_file(file)
+    print("ICIIIIIIIIIIIIIIIIIIIIIIIIIIIII ", isbn)
+    if not isbn:
+        return get_model_predict(model, get_image_from_bytes(file.file.read()))
+    else:
+        return isbn
    #os.system("yolo predict model=./best.pt source='./test_1.jpeg'")
 
    #return {'res': 'done'}

@@ -11,6 +11,7 @@ import json
 from loguru import logger
 import sys
 import pytesseract
+import configparser
 
 
 app = FastAPI()
@@ -223,7 +224,10 @@ def img_object_detection_to_json(file: bytes = File(...)):
     for item in result['detect_objects']:
         if item['name'] != 'ISBN':
             print(item)
-            #pytesseract.pytesseract.tesseract_cmd = <path_to-tesseract.exe>
+            #config = configparser.ConfigParser()
+            #config.readfp(open(r'./config.txt'))
+            #print(config.get('TESSERACT', 'PATH'))
+            pytesseract.pytesseract.tesseract_cmd = '<path_to_tesseract.exe>'   #config.get('TESSERACT', 'PATH')
             txt = pytesseract.image_to_string(crop_image_by_predict(input_image, predict, item['name'])) #for now only crop the first in the category, TODO change that 
             item = item.update({'Text': txt})
     # Step 5: Logs and return
@@ -242,65 +246,22 @@ def try_barcode_from_file(file: UploadFile):
 
 #====================================================================================================================
 
-@app.post("/segment/")
-async def segment(file: UploadFile):
-    isbn = False #try_barcode_from_file(file)
-    print("ICIIIIIIIIIIIIIIIIIIIIIIIIIIIII ", isbn)
-    if not isbn:
-        return get_model_predict(model, get_image_from_bytes(file.file.read()))
-    else:
-        return isbn
-   #os.system("yolo predict model=./best.pt source='./test_1.jpeg'")
-
-   #return {'res': 'done'}
-
-'''
-	img = read_image(file.file.read())
-	results = model.predict(source = img, conf=0.2)  # predict on an image
-	print("SUCCESSFULLY PREDICTED=================================")
-	# Process results list
-	for result in results:
-		boxes = result.boxes  # Boxes object for bounding box outputs
-		masks = result.masks  # Masks object for segmentation masks outputs
-		keypoints = result.keypoints  # Keypoints object for pose outputs
-		probs = result.probs  # Probs object for classification outputs
-		obb = result.obb  # Oriented boxes object for OBB outputs
-		print(boxes)
-		print(masks)
-		print(keypoints)
-		print(probs)
-		print(obb)
-	return {'res': 'done'}'''
 
 @app.post("/extractinfo/")
-async def create_extract_info(file: UploadFile):
-	return {"filename": file.filename, "title": "Mon super livre", "author" : "Arthur Le Best", "year" : "2024", "ISBN" : "9782410000757"}
+async def segmentation_ocr_dummy(file: UploadFile):
+    input_image = get_image_from_bytes(file)
+    return {"detect_objects":[{"xmin":172.3708953857,"ymin":275.1319580078,"xmax":774.1133422852,"ymax":491.0144042969,"confidence":0.9650346637,
+                            "class":3,"name":"Titre","Text":"LA GRANDE\nBEU VERIE\n"},
+                           {"xmin":319.3504943848,"ymin":126.0726394653,"xmax":638.5608520508,"ymax":187.2577972412,"confidence":0.7958808541,
+                            "class":0,"name":"Auteur","Text":"RENE DAUMAL\n"},
+                           {"xmin":219.3504943848,"ymin":26.0726394653,"xmax":538.5608520508,"ymax":87.2577972412,"confidence":0.60,
+                            "class":1,"name":"ISBN","Text":"123456789\n"}],
+         "detect_objects_names":"Titre, Auteur, ISBN"}
 
-
-@app.post("/barcode/")
-async def read_barcode(file: UploadFile):
-	img = get_image_from_bytes(file.file.read())
-	results = zxingcpp.read_barcodes(img)
-	if len(results) > 0 :
-		for result in results:
-			return {'code' : f'{result.text}', 'format' : f'{result.format}', 'content' : f'{result.content_type}', 'position' : f'{result.position}'}
-	else:
-		raise HTTPException(status_code=404, detail="Barcode not found")
 
 @app.get("/")
 async def main():
 	content = """
-<body>
-<form action="/barcode/" enctype="multipart/form-data" method="post">
-<input name="file" type="file" multiple>
-<input type="submit">
-</form>
-
-<form action="/segment/" enctype="multipart/form-data" method="post">
-<input name="file" type="file">
-<input type="submit">
-</form>
-
 <form action="/img_object_detection_to_json/" enctype="multipart/form-data" method="post">
 <input name="file" type="file">
 <input type="submit">

@@ -247,8 +247,16 @@ def try_barcode_from_file(file: UploadFile):
 #====================================================================================================================
 
 
-@app.post("/extractinfo/")
+@app.post("/segmentation_ocr_dummy/")
 async def segmentation_ocr_dummy(file: UploadFile):
+    """
+    Test - Object Detection from an image.
+
+    Args:
+        file (bytes): The image file in bytes format.
+    Returns:
+        dict: JSON format containing the Objects Detections, always the same for testing purposes.
+    """
     input_image = get_image_from_bytes(file)
     return {"detect_objects":[{"xmin":172.3708953857,"ymin":275.1319580078,"xmax":774.1133422852,"ymax":491.0144042969,"confidence":0.9650346637,
                             "class":3,"name":"Titre","Text":"LA GRANDE\nBEU VERIE\n"},

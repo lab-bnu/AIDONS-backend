@@ -1,7 +1,8 @@
 from io import BytesIO
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.responses import HTMLResponse
-from fastapi.middleware.cors import CORSMiddleware
+# from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.cors import CORSMiddleware
 from PIL import Image
 import zxingcpp
 from ultralytics import YOLO
@@ -13,18 +14,9 @@ import sys
 import pytesseract
 import configparser
 
-
 app = FastAPI()
 
 model = YOLO('best.pt')  # load a pretrained model 
-print("SUCCESSFULLY LOADED=================================")
-
-origins = [
-	"http://localhost",
-	"http://localhost:8080",
-	"http://localhost:3000",
-	"https://lab-aidons.vercel.app/"
-]
 
 app.add_middleware(
 	CORSMiddleware,

@@ -36,8 +36,7 @@ def get_image_from_bytes(binary_image: bytes) -> Image:
     Returns:
         PIL.Image: The image in PIL RGB format
     """
-    input_image = Image.open(binary_image).convert("RGB")
-#	    input_image = Image.open(BytesIO(binary_image)).convert("RGB")
+    input_image = Image.open(BytesIO(binary_image.read())).convert("RGB")
 
     return input_image
 

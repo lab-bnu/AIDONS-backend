@@ -36,7 +36,7 @@ def get_image_from_bytes(binary_image: bytes) -> Image:
     Returns:
         PIL.Image: The image in PIL RGB format
     """
-    input_image = Image.open(BytesIO(bytearray(binary_image.read()))).convert("RGB")
+    input_image = Image.open(BytesIO(binary_image)).convert("RGB")
 
     return input_image
 
@@ -250,7 +250,7 @@ async def segmentation_ocr_dummy(file: UploadFile):
     Returns:
         dict: JSON format containing the Objects Detections, always the same for testing purposes.
     """
-    input_image = get_image_from_bytes(file)
+    input_image = get_image_from_bytes(file.file.read())
     return {"detect_objects":[{"xmin":172.3708953857,"ymin":275.1319580078,"xmax":774.1133422852,"ymax":491.0144042969,"confidence":0.9650346637,
                             "class":3,"name":"Titre","Text":"LA GRANDE\nBEU VERIE\n"},
                            {"xmin":319.3504943848,"ymin":126.0726394653,"xmax":638.5608520508,"ymax":187.2577972412,"confidence":0.7958808541,
